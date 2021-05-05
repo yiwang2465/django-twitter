@@ -42,7 +42,7 @@ class AccountViewSet(viewsets.ViewSet):
         return Response({
             'success': True,
             'user': UserSerializer(user).data,
-        })
+        }, status=201)
 
     @action(methods=['POST'], detail=False)
     def logout(self, request):
@@ -75,7 +75,7 @@ class AccountViewSet(viewsets.ViewSet):
         django_login(request, user)
         return Response({
             'success': True,
-            'user': UserSerializer(instance=user).validated_data
+            'user': UserSerializer(instance=user).data
         })
 
     @action(methods=['GET'], detail=False)
