@@ -15,6 +15,10 @@ class Tweet(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        index_together = (('user', 'created_at'),)
+        ordering = ('user', 'created_at')
+
     @property
     def hours_to_now(self):
         return (utc_now() - self.created_at).seconds // 3600
