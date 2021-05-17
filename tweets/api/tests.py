@@ -28,15 +28,18 @@ class TweetApiTests(TestCase):
         ]
 
     def test_list_api(self):
+        # missing user_id
         response = self.anonymous_client.get(TWEET_LIST_API)
         self.assertEqual(response.status_code, 400)
 
+        # test list function
         response = self.anonymous_client.get(TWEET_LIST_API, {'user_id': self.user1.id})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['tweets']), 3)
         response = self.anonymous_client.get(TWEET_LIST_API, {'user_id': self.user2.id})
         self.assertEqual(len(response.data['tweets']), 2)
 
+        # test list order
         self.assertEqual(response.data['tweets'][0]['id'], self.tweets2[1].id)
         self.assertEqual(response.data['tweets'][1]['id'], self.tweets2[0].id)
 
