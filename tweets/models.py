@@ -4,12 +4,13 @@ from utils.time_helpers import utc_now
 
 # Create your models here.
 
+
 class Tweet(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
-        help_text='who posts this tweet'
+        help_text='who posts this tweet',
     )
     content = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -17,7 +18,7 @@ class Tweet(models.Model):
 
     class Meta:
         index_together = (('user', 'created_at'),)
-        ordering = ('user', 'created_at')
+        ordering = ('user', '-created_at')
 
     @property
     def hours_to_now(self):
