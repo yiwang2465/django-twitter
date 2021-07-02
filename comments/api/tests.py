@@ -25,9 +25,15 @@ class CommentApiTest(TestCase):
         # input validation
         response = self.user1_client.post(COMMENT_URL)
         self.assertEqual(response.status_code, 400)
-        response = self.user1_client.post(COMMENT_URL, {'tweet_id': self.tweet.id})
+        response = self.user1_client.post(
+            COMMENT_URL,
+            {'tweet_id': self.tweet.id},
+        )
         self.assertEqual(response.status_code, 400)
-        response = self.user1_client.post(COMMENT_URL, {'content': 'some content'})
+        response = self.user1_client.post(
+            COMMENT_URL,
+            {'content': 'some content'},
+        )
         self.assertEqual(response.status_code, 400)
         response = self.user1_client.post(COMMENT_URL, {
             'tweet_id': self.tweet.id,
@@ -66,15 +72,15 @@ class CommentApiTest(TestCase):
         another_tweet = self.create_tweet(self.user2)
         url = '{}{}/'.format(COMMENT_URL, comment.id)
 
-        #
+        # User needs to be authenticated when using put
         response = self.anonymous_client.put(url, {'content': 'new'})
         self.assertEqual(response.status_code, 403)
-        #
+        # User can not update other users' comments
         response = self.user2_client.put(url, {'content': 'new'})
         self.assertEqual(response.status_code, 403)
         comment.refresh_from_db()
         self.assertNotEqual(comment.content, 'new')
-        #
+        # User can only update comment content, other changes will be ignored
         before_updated_at = comment.updated_at
         before_created_at = comment.created_at
         now = timezone.now()
@@ -92,3 +98,30 @@ class CommentApiTest(TestCase):
         self.assertEqual(comment.created_at, before_created_at)
         self.assertNotEqual(comment.created_at, now)
         self.assertNotEqual(comment.updated_at, before_updated_at)
+
+    def test_list(self):
+        # require tweet_id
+        response = self.anonymous_client.get(COMMENT_URL)
+        self.assertEqual(response.status_code, 400)
+        # No comment
+        response = self.anonymous_client.get(COMMENT_URL, {
+            'tweet_id': self.tweet.id,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['comments']), 0)
+        # sort by created at
+        self.create_comment(self.user1, self.tweet, '1')
+        self.create_comment(self.user2, self.tweet, '2')
+        self.create_comment(self.user2, self.create_tweet(self.user2), '3')
+        response = self.anonymous_client.get(COMMENT_URL, {
+            'tweet_id': self.tweet.id,
+        })
+        self.assertEqual(len(response.data['comments']), 2)
+        self.assertEqual(response.data['comments'][0]['content'], '1')
+        self.assertEqual(response.data['comments'][1]['content'], '2')
+        # only tweet_id will be used in filtering
+        response = self.anonymous_client.get(COMMENT_URL, {
+            'tweet_id': self.tweet.id,
+            'user_id': self.user1.id,
+        })
+        self.assertEqual(len(response.data['comments']), 2)
