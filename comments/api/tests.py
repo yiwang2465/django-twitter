@@ -4,6 +4,9 @@ from rest_framework.test import APIClient
 from testing.testcases import TestCase
 
 COMMENT_URL = '/api/comments/'
+TWEET_LIST_API = '/api/tweets/'
+TWEET_DETAIL_API = '/api/tweets/{}/'
+NEWSFEED_LIST_API = '/api/newsfeeds/'
 
 
 class CommentApiTest(TestCase):
@@ -125,3 +128,27 @@ class CommentApiTest(TestCase):
             'user_id': self.user1.id,
         })
         self.assertEqual(len(response.data['comments']), 2)
+
+    def test_comments_count(self):
+        # tweet detail api
+        tweet = self.create_tweet(self.user1)
+        url = TWEET_DETAIL_API.format(tweet.id)
+        response = self.user2_client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['comments_count'], 0)
+
+        # tweet list api
+        self.create_comment(self.user1, tweet)
+        response = self.user2_client.get(
+            TWEET_LIST_API,
+            {'user_id': self.user1.id}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['tweets'][0]['comments_count'], 1)
+
+        # newsfeed list api
+        self.create_comment(self.user2, tweet)
+        self.create_newsfeed(self.user2, tweet)
+        response = self.user2_client.get(NEWSFEED_LIST_API)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['newsfeeds'][0]['tweet']['comments_count'], 2)
